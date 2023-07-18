@@ -1,6 +1,7 @@
 version: '3.3'
 services:
   nginx:
+    image: z123fg/first:ta-nxinx
     depends_on:
       - client
       - backend
@@ -11,6 +12,7 @@ services:
     ports:
       - '80:80'
   client:
+    image: z123fg/first:ta-client
     build:
       context: ./client
     restart: on-failure
@@ -36,6 +38,7 @@ services:
     volumes:
       - my-db:/var/lib/mysql
   backend:
+    image: z123fg/first:ta-backend
     depends_on:
       db:
         condition: service_healthy
