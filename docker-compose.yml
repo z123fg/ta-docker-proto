@@ -1,0 +1,49 @@
+version: '3.3'
+services:
+  nginx:
+    depends_on:
+      - client
+      - backend
+    restart: always # because it is routing traffic to our entire app
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    ports:
+      - '80:80'
+  client:
+    build:
+      context: ./client
+    restart: on-failure
+    container_name: client 
+  db:
+    image: mysql:latest
+    restart: always
+    environment:
+      MYSQL_DATABASE: 'ta-webrtc'
+      MYSQL_ROOT_PASSWORD: 'Jingn63z93!'
+    ports:
+      # <Port exposed> : <MySQL Port running inside container>
+      - '3307:3306'
+    expose:
+      # Opens port 3306 on the container
+      - '3307'
+      # Where our data will be persisted
+    healthcheck:
+      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
+      interval: 3s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - my-db:/var/lib/mysql
+  backend:
+    depends_on:
+      db:
+        condition: service_healthy
+    build:
+      context: ./backend
+    restart: on-failure
+    container_name: backend
+ 
+# Names our volume
+volumes:
+  my-db:
