@@ -75,7 +75,7 @@ const Home: FC<IHomeProps> = ({ user: curUser, login, signup, signout }) => {
     );
     useEffect(() => {
         if (!curUser.token) return;
-        const socket = io("http://localhost", {
+        const socket = io("http://18.207.208.28", {
             auth: {
                 token: curUser.token,
             },
