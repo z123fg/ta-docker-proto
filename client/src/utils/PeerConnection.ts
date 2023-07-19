@@ -1,7 +1,3 @@
-import compareOrigin from "./compareOrigin";
-import getOrigin from "./getOrigin";
-import getRespondTo from "./getRespondTo";
-
 export class PeerConnection {
     pc: RTCPeerConnection | null = null;
 
@@ -29,11 +25,11 @@ export class PeerConnection {
     }
 
     async gatherCandidate(isMaster: boolean = true) {
-        console.log("candidate start")
+        console.log("candidate start");
         return new Promise(async (res, rej) => {
             this.pc!.onicecandidate = (e: RTCPeerConnectionIceEvent) => {
                 const candidate = e.candidate;
-                console.log("candidate1", candidate)
+                console.log("candidate1", candidate);
                 if (candidate === null) {
                     res(this.pc?.localDescription);
                 }
@@ -61,16 +57,30 @@ export class PeerConnection {
                 }
             };
             this.dc = this.pc.createDataChannel("dc");
-            await this.gatherCandidate();
+            this.pc!.onicecandidate = (e: RTCPeerConnectionIceEvent) => {
+                const candidate = e.candidate;
+                if (candidate) {
+                    const message = {
+                        type: "candidate",
+                        targetId: this.target,
+                        ownerId: this.owner,
+                        SD: candidate,
+                    };
+                    console.log("send candidate", message);
+                    PeerConnection.emit("sd", message);
+                }
+            };
+            const offer = await this.pc!.createOffer();
+            await this.pc!.setLocalDescription(offer);
 
             //updateLD
             const message = {
                 ownerId: this.owner,
                 targetId: this.target,
-                SD: JSON.stringify(this.LD),
+                SD: offer,
                 type: "offer",
             };
-            console.log(PeerConnection.emit);
+            console.log("send offer", message);
             PeerConnection.emit("sd", message);
         } catch (err) {
             console.log("failed to init master", err);
@@ -84,25 +94,48 @@ export class PeerConnection {
         this.pc = null;
     }
 
-    async initSlave(offerStr: string) {
+    addCandidate(candidate: RTCIceCandidate) {
+        console.log("receive candidate", candidate)
+        if (!this.pc) throw Error("no peerconnection to add ice candidate!");
+        this.pc.addIceCandidate(candidate);
+    }
+
+    async initSlave(offer: RTCSessionDescriptionInit) {
         this.pc = new RTCPeerConnection(PeerConnection.server);
-        const offer = JSON.parse(offerStr);
+        console.log("receive offer", offer)
         await this.pc?.setRemoteDescription(offer);
-        await this.gatherCandidate(false);
+        this.pc!.onicecandidate = (e: RTCPeerConnectionIceEvent) => {
+            const candidate = e.candidate;
+
+            if (candidate) {
+                const message = {
+                    type: "candidate",
+                    targetId: this.target,
+                    ownerId: this.owner,
+                    SD: candidate,
+                };
+                console.log("send candidate", message);
+                PeerConnection.emit("sd", message);
+            }
+        };
+        const answer = await this.pc!.createAnswer();
+        await this.pc!.setLocalDescription(answer);
         const message = {
             ownerId: this.owner,
             targetId: this.target,
-            SD: JSON.stringify(this.LD),
+            SD: answer,
             type: "answer",
         };
-        console.log("ready to emit")
+        console.log("send answer", message);
+
         PeerConnection.emit("sd", message);
 
         //updateLD
     }
 
-    async connect(answerStr: string) {
-        const answer = JSON.parse(answerStr);
-        await this.pc?.setRemoteDescription(answer);
+    async connect(answer: RTCSessionDescriptionInit) {
+        console.log("receive answer", answer)
+        if (!this.pc) throw Error("no peerconnection to add ice candidate!");
+        await this.pc.setRemoteDescription(answer);
     }
 }

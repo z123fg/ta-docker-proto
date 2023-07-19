@@ -36,7 +36,7 @@ export interface IHomeProps {
 
 export interface SDMessage {
     ownerId: string;
-    SD: string;
+    SD: RTCSessionDescriptionInit | RTCIceCandidate;
     type: string;
 }
 

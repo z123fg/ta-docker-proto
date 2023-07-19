@@ -76,10 +76,12 @@ class PeerConnectionsManager {
         const pc = this.PCMap[ownerId];
         const targetId = this._curUser.userId;
         if (+ownerId > +targetId && type === "offer") {
-            pc.initSlave(SD);
+            pc.initSlave(SD as RTCSessionDescriptionInit);
         } else if (+ownerId < +targetId && type === "answer") {
-            pc.connect(SD);
-        } else {
+            pc.connect(SD as RTCSessionDescriptionInit);
+        }else if(type==="candidate"){
+            pc.addCandidate(SD as RTCIceCandidate)
+        } else  {
             throw Error("target and owner cannot be the same!");
         }
     }
