@@ -29,9 +29,11 @@ export class PeerConnection {
     }
 
     async gatherCandidate(isMaster: boolean = true) {
+        console.log("candidate start")
         return new Promise(async (res, rej) => {
             this.pc!.onicecandidate = (e: RTCPeerConnectionIceEvent) => {
                 const candidate = e.candidate;
+                console.log("candidate1", candidate)
                 if (candidate === null) {
                     res(this.pc?.localDescription);
                 }
@@ -49,9 +51,9 @@ export class PeerConnection {
             clearTimeout(this.timer!);
             this.timer = setTimeout(() => {
                 if (this.state !== "connected") {
-                    //this.initMaster();
+                    this.initMaster();
                 }
-            }, 3000);
+            }, 60000);
             this.pc = new RTCPeerConnection(PeerConnection.server);
             this.pc.onconnectionstatechange = () => {
                 if (this.state === "disconnected" || this.state === "failed") {
@@ -60,6 +62,7 @@ export class PeerConnection {
             };
             this.dc = this.pc.createDataChannel("dc");
             await this.gatherCandidate();
+
             //updateLD
             const message = {
                 ownerId: this.owner,
@@ -71,7 +74,7 @@ export class PeerConnection {
             PeerConnection.emit("sd", message);
         } catch (err) {
             console.log("failed to init master", err);
-            //this.initMaster();
+            this.initMaster();
         }
     }
 

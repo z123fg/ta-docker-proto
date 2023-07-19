@@ -2,6 +2,7 @@ version: '3.3'
 services:
   nginx:
     image: z123fg/first:ta-nxinx
+    platform: linux/amd64
     depends_on:
       - client
       - backend
@@ -13,6 +14,7 @@ services:
       - '80:80'
   client:
     image: z123fg/first:ta-client
+    platform: linux/amd64
     build:
       context: ./client
     restart: on-failure
@@ -39,6 +41,7 @@ services:
       - my-db:/var/lib/mysql
   backend:
     image: z123fg/first:ta-backend
+    platform: linux/amd64
     depends_on:
       db:
         condition: service_healthy

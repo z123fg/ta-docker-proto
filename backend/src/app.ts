@@ -28,7 +28,6 @@ import { User } from "./models/user.entities";
 import { SessionDescription } from "./models/sessionDescription.entities";
 var cors = require("cors");
 config();
-console.log("history", History, Room, User, SessionDescription)
 
 myDataSource
     .initialize()
@@ -79,7 +78,7 @@ io.on("connection", async (socket: any) => {
     socket.on("sd", async (message: any) => {
         const { ownerId, targetId, SD, type } = message;
         console.log(ownerId, targetId, SD, type);
-        (await getSocket(targetId)).emit("sd", { ownerId, SD, type });
+        (await getSocket(targetId))?.emit("sd", { ownerId, SD, type });
     });
     
 
