@@ -1,3 +1,5 @@
+import { IMessage } from "../components/Home/Home";
+
 export class PeerConnection {
     pc: RTCPeerConnection | null = null;
 
@@ -7,9 +9,15 @@ export class PeerConnection {
     target: number;
     static server: Object;
     static emit: any = () => {};
-    constructor(owner: number, target: number) {
+    onMessage;
+    constructor(
+        owner: number,
+        target: number,
+        onMessage: (message: IMessage) => void
+    ) {
         this.owner = owner;
         this.target = target;
+        this.onMessage = onMessage;
     }
 
     get LD() {
@@ -56,7 +64,15 @@ export class PeerConnection {
                     this.initMaster();
                 }
             };
-            this.dc = this.pc.createDataChannel("dc");
+            this.dc = this.pc.createDataChannel("channel");
+            this.dc.onmessage = (e) => {
+                console.log("Received a message: ", e.data);
+                this.onMessage(JSON.parse(e.data));
+            };
+
+            this.dc.onopen = (e) => {
+                console.log("dc open");
+            };
             this.pc!.onicecandidate = (e: RTCPeerConnectionIceEvent) => {
                 const candidate = e.candidate;
                 if (candidate) {
@@ -95,15 +111,33 @@ export class PeerConnection {
     }
 
     addCandidate(candidate: RTCIceCandidate) {
-        console.log("receive candidate", candidate)
+        console.log("receive candidate", candidate);
         if (!this.pc) throw Error("no peerconnection to add ice candidate!");
         this.pc.addIceCandidate(candidate);
     }
 
+    sendMessage(message: string) {
+        console.log("send message", this.dc, message);
+        this.dc?.send(message);
+    }
+
     async initSlave(offer: RTCSessionDescriptionInit) {
         this.pc = new RTCPeerConnection(PeerConnection.server);
-        console.log("receive offer", offer)
+        console.log("receive offer", offer);
+        this.pc.ondatachannel = (e) => {
+            console.log("onDataChannel");
+            this.dc = e.channel;
+            this.dc.onmessage = (e) => {
+                console.log("receive message", e.data);
+                this.onMessage(JSON.parse(e.data));
+            };
+            this.dc.onopen = () => {
+                console.log("dc open");
+            };
+        };
+
         await this.pc?.setRemoteDescription(offer);
+
         this.pc!.onicecandidate = (e: RTCPeerConnectionIceEvent) => {
             const candidate = e.candidate;
 
@@ -118,6 +152,7 @@ export class PeerConnection {
                 PeerConnection.emit("sd", message);
             }
         };
+
         const answer = await this.pc!.createAnswer();
         await this.pc!.setLocalDescription(answer);
         const message = {
@@ -134,7 +169,7 @@ export class PeerConnection {
     }
 
     async connect(answer: RTCSessionDescriptionInit) {
-        console.log("receive answer", answer)
+        console.log("receive answer", answer);
         if (!this.pc) throw Error("no peerconnection to add ice candidate!");
         await this.pc.setRemoteDescription(answer);
     }

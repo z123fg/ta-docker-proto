@@ -1,4 +1,4 @@
-import { User } from "../components/Home/Home";
+import { IMessage, User } from "../components/Home/Home";
 import { Socket, io } from "socket.io-client";
 import { UserInfo } from "../types/types";
 import { PeerConnection } from "./PeerConnection";
@@ -23,10 +23,12 @@ class PeerConnectionsManager {
     PCMap: IPCMap = {};
     private _exclusiveRoomUsers: User[] = [];
     private _SDs: ISD[] = [];
+    private onMessage
 
-    constructor(curUser: UserInfo, socket: Socket | null) {
+    constructor(curUser: UserInfo, socket: Socket | null, onMessage: (message: IMessage)=>void) {
         this._curUser = curUser;
         this._socket = socket;
+        this.onMessage = onMessage
     }
 
     updateRoomUsers = (newRoomUsers: User[]) => {
@@ -49,7 +51,7 @@ class PeerConnectionsManager {
             if (!!curPC) {
                 newPCMap[target] = curPC;
             } else {
-                const pc = new PeerConnection(owner, target);
+                const pc = new PeerConnection(owner, target, this.onMessage);
                 newPCMap[target] = pc;
                 console.log("ismaster", owner, target);
                 if (owner > target) pc.initMaster();
@@ -84,6 +86,12 @@ class PeerConnectionsManager {
         } else  {
             throw Error("target and owner cannot be the same!");
         }
+    }
+
+    sendMessage(message: IMessage){
+        Object.values(this.PCMap).forEach(pc=>{
+            pc.sendMessage(JSON.stringify(message))
+        })
     }
 
     updateSocket = (newSocket: Socket | null) => {

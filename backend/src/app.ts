@@ -22,10 +22,6 @@ import { authMiddleware } from "./middleware/auth";
 import { login, signup } from "./controllers/user";
 
 import { debounce } from "lodash";
-import { Room } from "./models/room.entities";
-import { History } from "./models/history.entities";
-import { User } from "./models/user.entities";
-import { SessionDescription } from "./models/sessionDescription.entities";
 var cors = require("cors");
 config();
 
